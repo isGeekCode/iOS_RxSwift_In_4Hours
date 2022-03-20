@@ -19,6 +19,7 @@ class ViewController: UITableViewController {
         super.viewDidLoad()
     }
 
+    // just - 해당 데이터 스트림을 그대로 전달
     @IBAction func exJust1() {
         Observable.just("Hello World")
             .subscribe(onNext: { str in
@@ -34,7 +35,8 @@ class ViewController: UITableViewController {
             })
             .disposed(by: disposeBag)
     }
-
+    
+    // from - 데이터 스트림의 원소를 하나식 onNext
     @IBAction func exFrom1() {
         Observable.from(["RxSwift", "In", "4", "Hours"])
             .subscribe(onNext: { str in
@@ -42,7 +44,8 @@ class ViewController: UITableViewController {
             })
             .disposed(by: disposeBag)
     }
-
+    
+    // map - 스트림 데이터 형식 변환
     @IBAction func exMap1() {
         Observable.just("Hello")
             .map { str in "\(str) RxSwift" }
@@ -61,6 +64,7 @@ class ViewController: UITableViewController {
             .disposed(by: disposeBag)
     }
 
+    // filter - 스트림에서 원하는 요소만 캐치 
     @IBAction func exFilter() {
         Observable.from([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
             .filter { $0 % 2 == 0 }
