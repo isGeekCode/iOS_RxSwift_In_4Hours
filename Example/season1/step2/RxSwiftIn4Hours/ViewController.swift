@@ -20,11 +20,20 @@ class ViewController: UITableViewController {
     }
 
     // just - 해당 데이터 스트림을 그대로 전달
+    // subscribe - 연산자의 사용이 끝나고 나서 사용에 대한 명령
+    // 스트림은 error, complete 시 종료
     @IBAction func exJust1() {
         Observable.just("Hello World")
-            .subscribe(onNext: { str in
-                print(str)
-            })
+            .subscribe{ event in
+                switch event {
+                case .next(let str):
+                    print(str)
+                case .error(let err):
+                    break
+                case .completed:
+                    break
+                }
+            }
             .disposed(by: disposeBag)
     }
 
@@ -36,12 +45,33 @@ class ViewController: UITableViewController {
             .disposed(by: disposeBag)
     }
     
+    func output(_ any: Any) -> () {
+        print(any)
+    }
+    
     // from - 데이터 스트림의 원소를 하나식 onNext
     @IBAction func exFrom1() {
-        Observable.from(["RxSwift", "In", "4", "Hours"])
-            .subscribe(onNext: { str in
-                print(str)
+        Observable.from(["RxSwift", "In", 4, "Hours"])
+            .subscribe(onNext: output, onError: { err in
+                print(err.localizedDescription)
+            }, onCompleted: {
+                print("completed")
+            }, onDisposed: {
+                print("disposed")
             })
+//            .subscribe{ event in
+//                switch event {
+//                case .next(let str):
+//                    print("next: \(str)")
+//                    break
+//                case .error(let err):
+//                    print("error: \(err.localizedDescription)")
+//                    break
+//                case .completed:
+//                    print("completed")
+//                    break
+//                }
+//            }
             .disposed(by: disposeBag)
     }
     
@@ -81,9 +111,19 @@ class ViewController: UITableViewController {
             .map { URL(string: $0) }
             .filter { $0 != nil }
             .map { $0! }
+            // subscribe가 되는 순간 시작, 어느 위치던지 해당 스트림의 시작부터 해당 스케쥴러 적용, 처음 받아오는 부분에서 부터 비동기적으로 처리해야할 경우
+            .subscribeOn(ConcurrentDispatchQueueScheduler(qos: .default))
+//  원하는 시점, 상황에서 비동기적으로 처리해야할 경우
+//            .observeOn(ConcurrentDispatchQueueScheduler(qos: .default))
             .map { try Data(contentsOf: $0) }
             .map { UIImage(data: $0) }
+            .observeOn(MainScheduler.instance)
+            .do(onNext: { image in
+                // side effect 처리에 있어서 do
+                print(image?.size)
+            })
             .subscribe(onNext: { image in
+                // side effect
                 self.imageView.image = image
             })
             .disposed(by: disposeBag)
