@@ -11,12 +11,19 @@ import RxSwift
 import UIKit
 
 class ViewController: UIViewController {
+    let viewModel = ViewModel()
     var disposeBag = DisposeBag()
-
+    
     override func viewDidLoad() {
         super.viewDidLoad()
-        bindUI()
+        bindInput()
+        bindOutput()
     }
+    
+//    override func viewWillDisappear(_ animated: Bool) {
+//        super.viewWillDisappear(animated)
+//        disposeBag = DisposeBag()
+//    }
 
     // MARK: - IBOutler
 
@@ -27,22 +34,38 @@ class ViewController: UIViewController {
     @IBOutlet var pwValidView: UIView!
 
     // MARK: - Bind UI
+    
+    func invert(_ bool: Bool) -> Bool { return !bool }
 
-    private func bindUI() {
-        // id input +--> check valid --> bullet
-        //          |
-        //          +--> button enable
-        //          |
-        // pw input +--> check valid --> bullet
+    private func bindInput() {
+        // input: id, pw 입력
+        idField.rx.text.orEmpty
+            .asDriver()
+            .drive(viewModel.input.idInputText)
+            .disposed(by: disposeBag)
+
+        pwField.rx.text.orEmpty
+            .asDriver()
+            .drive(viewModel.input.pwInputText)
+            .disposed(by: disposeBag)
     }
-
-    // MARK: - Logic
-
-    private func checkEmailValid(_ email: String) -> Bool {
-        return email.contains("@") && email.contains(".")
-    }
-
-    private func checkPasswordValid(_ password: String) -> Bool {
-        return password.count > 5
+    
+    // drive 메인스레드로 돌리는 역할 
+    func bindOutput() {
+        // output: 불릿 뷰, 버튼
+        viewModel.output.idValid
+            .observeOn(MainScheduler.instance)
+            .bind(to: self.idValidView.rx.isHidden)
+            .disposed(by: disposeBag)
+        
+        viewModel.output.pwValid
+            .observeOn(MainScheduler.instance)
+            .bind(to: self.pwValidView.rx.isHidden)
+            .disposed(by: disposeBag)
+        
+        viewModel.output.isButtonEnable
+            .observeOn(MainScheduler.instance)
+            .bind(to: self.loginButton.rx.isEnabled)
+            .disposed(by: disposeBag)
     }
 }
