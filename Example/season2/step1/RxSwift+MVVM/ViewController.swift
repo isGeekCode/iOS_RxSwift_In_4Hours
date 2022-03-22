@@ -29,6 +29,8 @@ class ViewController: UIViewController {
     @IBOutlet var timerLabel: UILabel!
     @IBOutlet var editView: UITextView!
 
+    let disposeBag = DisposeBag()
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
@@ -58,6 +60,7 @@ class ViewController: UIViewController {
     // 비동기로 생기는 결과값을 completion이 아닌, 나중에 return 값으로 전달하기 위해 만들어진 유틸리티
     // Observable 형태로 감싸서 return 하면 나중에 생기는 데이터
     // 1. 비동기로 생기는 데이터를 Observable로 감싸서 리턴하는 방법
+    // 생성 - create, just, from
     func downloadJson(_ url: String) -> Observable<String?> {
         return Observable.create() { emitter in
             let url = URL(string: url)!
@@ -77,7 +80,6 @@ class ViewController: UIViewController {
                 task.cancel()
             }
         }
-        
         
 //        return Observable() { f in
         
@@ -99,32 +101,34 @@ class ViewController: UIViewController {
     // MARK: SYNC
 
     @IBOutlet var activityIndicator: UIActivityIndicatorView!
-
     // 2. Observable로 오는 데이터를 받아서 처리하는 방법
     // subscribe시 3유형의 이벤트 발생 - next, complete, error(여러가지 옵션)
     // 순환참조의 문제 발생 - 디버깅 방식
+    // suger: operator의 개념
+    // merge, zip, combineLatest - 합성
     @IBAction func onLoad() {
         editView.text = ""
         setVisibleWithAnimation(activityIndicator, true)
     
-        _ = downloadJson(MEMBER_LIST_URL)
+        let jsonObservable = downloadJson(MEMBER_LIST_URL)
+        let stringObservable = Observable.just("Hello World")
 //            .subscribe { json in
 //                self.editView.text = json
 //                self.setVisibleWithAnimation(self.activityIndicator, false)
 //            }
-            .debug()
-            .subscribe { [weak self] (event) in
-                switch event {
-                case .next(let json):
-                    DispatchQueue.main.async {
-                        self?.editView.text = json
-                        self?.setVisibleWithAnimation(self?.activityIndicator, false)
-                    }
-                case .error:
-                    break
-                case .completed:
-                    break
-                }
-            }
+//            .debug()
+        
+        Observable.zip(jsonObservable, stringObservable, resultSelector: { $1 + "\n" + $0! })
+//            .map { json in json?.count ?? 0 }
+//            .filter { $0 > 0 }
+//            .map { "\($0)" }
+            .observeOn(MainScheduler.instance)
+            // 위치와 관계없이 시작하는 쓰레드 지정
+            .subscribeOn(ConcurrentDispatchQueueScheduler(qos: .default))
+            .subscribe (onNext: {[weak self] (json) in
+                self?.editView.text = json
+                self?.setVisibleWithAnimation(self?.activityIndicator, false)
+            })
+            .disposed(by: disposeBag)
     }
 }
