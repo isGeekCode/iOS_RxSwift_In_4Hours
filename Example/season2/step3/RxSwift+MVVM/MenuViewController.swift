@@ -140,10 +140,8 @@ extension MenuViewController: UITableViewDataSource {
             tableView.beginUpdates()
             tableView.reloadRows(at: [indexPath], with: .automatic)
             tableView.endUpdates()
-
             self.updateTotalInfo()
         }
-
         return cell
     }
 }
