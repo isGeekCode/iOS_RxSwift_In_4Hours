@@ -26,6 +26,12 @@ class MenuViewController: UIViewController {
                 cell.title.text = item.name
                 cell.price.text = "\(item.price)"
                 cell.count.text = "\(item.count)"
+                
+                // 만약 cell 마다 viewModel을 구성한다고 한다면
+                // let cellViewModel = self.viewModel.cellViewModels[index]
+                // cell.setViewModel(cellViewModel)
+                // title, price, count 등은 cell 내부 setViewModel 안에서 처리
+    
                 cell.onChange = { [weak self] increase in
                     self?.viewModel.changeCount(item: item, increase: increase)
                 }
@@ -34,12 +40,26 @@ class MenuViewController: UIViewController {
         
         viewModel.itemsCount
             .map { "\($0)" }
-            .observeOn(MainScheduler.instance)
-            .bind(to: itemCountLabel.rx.text)
+            // UI 관련하여 드라이브를 통해서 에러나 가는 경우 디폴트로 바꿔서 처리
+            // Main 쓰레드 동작
+            .asDriver(onErrorJustReturn: "")
+            .drive(itemCountLabel.rx.text)
+            .disposed(by: disposeBag)
+        
+        Observable.just("경고")
+            .flatMap{ self.showAlert($0, "경고 알람이 왔어요") }
+            .delay(.seconds(3), scheduler: MainScheduler.instance)
+            .take(1)
+            .subscribe { alert in
+                alert.dismiss(animated: true)
+            }
             .disposed(by: disposeBag)
         
         viewModel.totalPrice
             .map { $0.currencyKR() }
+            // 타이머 지정
+            // .delay(.seconds(3), scheduler: MainScheduler.instance)
+            .catchErrorJustReturn("")
             .observeOn(MainScheduler.instance)
             // 순환참조 없이 bind로 해결 가능
 //            .subscribe { [weak self] (price) in
@@ -57,10 +77,14 @@ class MenuViewController: UIViewController {
         }
     }
 
-    func showAlert(_ title: String, _ message: String) {
+    func showAlert(_ title: String, _ message: String) -> Observable<UIAlertController> {
         let alertVC = UIAlertController(title: title, message: message, preferredStyle: .alert)
         alertVC.addAction(UIAlertAction(title: "OK", style: .default))
         present(alertVC, animated: true, completion: nil)
+//        execute(after: 3) {
+//
+//        }
+        return Observable.just(alertVC)
     }
 
     // MARK: - InterfaceBuilder Links

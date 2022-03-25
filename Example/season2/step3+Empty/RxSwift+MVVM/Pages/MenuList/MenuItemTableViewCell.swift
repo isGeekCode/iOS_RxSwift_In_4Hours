@@ -22,4 +22,12 @@ class MenuItemTableViewCell: UITableViewCell {
     @IBAction func onDecreaseCount() {
         onChange?(-1)
     }
+    
+    // func setViewModel(viewModel: CellViewModel) { viewModel.title.bind(title.rx.text)... }
+    
+//    override func prepareForReuse() {
+//        disposeBag = DisposeBag()
+//    }
+    
+    
 }
